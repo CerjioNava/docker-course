@@ -5,7 +5,7 @@
   - Virtualización vs Containerización.
   - Arquitectura de Docker.
 - CONTENEDORES:
-  - a
+  - 
 - DATOS EN DOCKER
 - IMAGENES
 - DOCKER COMO HERRAMIENTA DE DESARROLLO
