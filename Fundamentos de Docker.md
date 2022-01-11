@@ -5,7 +5,8 @@
   - Virtualización vs Containerización.
   - Arquitectura de Docker.
 - CONTENEDORES:
-  - a
+  - Conceptos generales
+  - nginx
 - DATOS EN DOCKER
   - a
 - IMAGENES
@@ -120,7 +121,7 @@ Dentro de la arquitectura de Docker encontramos:
 
 - Cada contenedor tiene un ID único, también tiene un nombre.
 
-### **Algunos comandos:**
+### **Algunos comandos generales:**
 
 - Ejecutar un nuevo contenedor de Docker:
   
@@ -184,6 +185,10 @@ Dentro de la arquitectura de Docker encontramos:
 
 https://www.edureka.co/blog/docker-commands/
 
+**NOTA: Detach (-d o --detach)**
+
+El detach desvincula el standar input/output del contenedor, haciendolo correr en background.
+
 ### **Modo interactivo (-it)**
 
 Modo interactivo para entrar al contenedor y ejecutar comandos dentro del mismo.
@@ -215,11 +220,63 @@ Batch como Main process
 
 Agujero negro (/dev/null) como Main process
 
-### Detach (-d o --detach)
+### **nginx**
 
+Es uno de los webserver y reverse proxy más importantes del mundo.
 
+Ejecuto nginx:
+
+            docker run -d --name proxy nginx
+
+IMPORTANTE: Cada contenedor tiene su propio stack de networking e interfaz de redes virtual. En PORTS se observa el puerto al que está escuchando el contendor, sin embargo, ese puerto no es el de nuestra máquina, así que debemos llevarlo a nuestra máquina. 
+
+Detengo el contenedor:
+
+            docker stop proxy
+
+Elimino el contenedor:
+
+            docker rm proxy (borro el contenedor)
+
+NOTA: No se puede eliminar un contenedor si este se encuentra activo.
+
+Detengo y elimino el contenedor:
+            
+            docker rm -f <contenedor> (lo para y lo borra)
+
+Si quiero exponer un contenedor a un puerto de mi máquina. Entonces ejecuto nginx y expongo el puerto 80 del contenedor en el puerto 8080:
+ 
+            docker run -d --name proxy -p 8080:80 nginx
+
+NOTA: "-p" es de publish/port y asigna ---> **puerto_maquina:puerto_contenedor**.
+
+localhost:8080 (desde mi navegador compruebo que funcione)
+            
+Logs del contenedor:
+
+            docker logs proxy
+            docker logs -f proxy                (follow)
+            docker logs --tail 10 -f proxy      (10 últimas entradas del log)
 
 -------------------------------------------------------------------------------
+
+### DATOS EN DOCKER
+
+-------------------------------------------------------------------------------
+
+### **EXTRA: Definiciones**
+
+- -d: Detach. Desvincula el standar input/output del contenedor.
+
+- -p: Proxy/Port. Define el puerto donde correr contenedor.
+
+- -f: Follow. Para seguir en tiempo real una ejecución de proceso.
+
+- -it: Interactive. Modo interactivo al acceder a contenedor.
+
+- -a: All. Muestra todos (all) en "docker ps".
+
+- -aq: ____. Solo los ids en "docker ps".
 
 
 -------------------------------------------------------------------------------
