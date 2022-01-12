@@ -161,6 +161,11 @@ Dentro de la arquitectura de Docker encontramos:
       docker rm <container_id>
       docker rm <name>
 
+- Eliminar un contenedor (ID o name) activo:
+
+      docker rm -f <container_id>
+      docker rm -f <name>
+
 - Eliminar todos los contenedores detenidos:
 
       docker container prune
@@ -226,27 +231,27 @@ Es uno de los webserver y reverse proxy más importantes del mundo.
 
 Ejecuto nginx:
 
-            docker run -d --name proxy nginx
+      docker run -d --name proxy nginx
 
 IMPORTANTE: Cada contenedor tiene su propio stack de networking e interfaz de redes virtual. En PORTS se observa el puerto al que está escuchando el contendor, sin embargo, ese puerto no es el de nuestra máquina, así que debemos llevarlo a nuestra máquina. 
 
 Detengo el contenedor:
 
-            docker stop proxy
+      docker stop proxy
 
 Elimino el contenedor:
 
-            docker rm proxy (borro el contenedor)
+      docker rm proxy (borro el contenedor)
 
 NOTA: No se puede eliminar un contenedor si este se encuentra activo.
 
 Detengo y elimino el contenedor:
             
-            docker rm -f <contenedor> (lo para y lo borra)
+      docker rm -f <contenedor> (lo para y lo borra)
 
 Si quiero exponer un contenedor a un puerto de mi máquina. Entonces ejecuto nginx y expongo el puerto 80 del contenedor en el puerto 8080:
  
-            docker run -d --name proxy -p 8080:80 nginx
+      docker run -d --name proxy -p 8080:80 nginx
 
 NOTA: "-p" es de publish/port y asigna ---> **puerto_maquina:puerto_contenedor**.
 
@@ -254,13 +259,98 @@ localhost:8080 (desde mi navegador compruebo que funcione)
             
 Logs del contenedor:
 
-            docker logs proxy
-            docker logs -f proxy                (follow)
-            docker logs --tail 10 -f proxy      (10 últimas entradas del log)
+      docker logs proxy
+      docker logs -f proxy                (follow)
+      docker logs --tail 10 -f proxy      (10 últimas entradas del log)
 
 -------------------------------------------------------------------------------
 
-### DATOS EN DOCKER
+## **DATOS EN DOCKER**
+
+Hay que recordar que los contenedores son entidades autocontenidas que no pueden acceder al SO de la máquina. Aún así, es necesario trabajar con data, como accedemos a ella?
+
+### **Bind Mounts**
+¬
+Creo un directorio en mi máquina para la data:
+
+      mkdir dockerdata
+
+Ejecutamos un contenedor para mongo y entramos al bash:
+
+      docker run -d --name db mongo
+      docker exec -it db bash
+
+DENTRO DEL BASH: 
+      
+      Nos conectamos a la base de datos:  mongo
+      Mostramos las BBDD:                 shows dbs 
+      Creo la BBDD platzi:                use platzi
+      Inserto un nuevo dato:              db.users.insert({“nombre”:“guido”}) 
+      Veo el dato cargado:                db.users.find()
+
+Si salgo del contenedor y lo elimino, al crear uno nuevo ya los datos no existen porque se perdieron con el contenedor.
+
+IMPORTANTE: Necesito un directorio en mi máquina con una versión de la misma, que pueda ocurrir dentro del contenedor, para esto utilizamos un Bind Mounts.
+
+Creamos el directorio:
+
+      mkdir       mongodata
+      cd          mongodata
+      pwd         (obtenemos el path del directorio)
+
+Ejecutamos el contenedor de mongo en modo detach, con un bind mount:
+
+      docker run -d --name db -v <path_de_mi maquina>:<path_dentro_del_contenedor(/data/db_mongo)>
+
+      docker run -d --name db -v /home/developer/Documentos/Github/docker-course/dockerdata/mongodata:/data/db mongo
+
+Accedemos nuevamente al contenedor, añadiremos data, eliminaremos y al ejecutar un nuevo contenedor con las mismas rutas, veremos como los datos persistiran:
+
+      docker exec -it db bash
+            mongo
+                  use platzi
+                  db.users.insert({“nombre”:“guido”})
+                  db.users.find()
+                  exit
+            exit
+      docker rm -f db
+
+      docker run -d --name db -v /home/developer/Documentos/Github/docker-course/dockerdata/mongodata:/data/db mongo
+
+      docker exec -it db bash
+            mongo
+                  use platzi
+                  db.users.find()
+
+NOTA: Mongo guarda datos por defecto en la ruta "/data/db".
+
+Los Bind Mounts permiten compartir data entre contenedores y la máquina anfitriona, atando una ruta dentro de la máquina que ejecuta el contenedor con una ruta dentro del contenedor. Lo que ocurra dentro del contenedor en dicha ruta, se verá reflejado en la máquina anfitriona.
+
+Sin embargo, hay problemas de seguridad al utilizar Bind Mounts ya que el contenedor tendrá acceso a todo lo que se encuentre en dicha ruta.
+
+### **Volúmenes**
+
+### **a**
+
+-------------------------------------------------------------------------------
+
+### **a**
+
+-------------------------------------------------------------------------------
+
+### **a**
+
+-------------------------------------------------------------------------------
+
+### **a**
+
+-------------------------------------------------------------------------------
+
+### **a**
+
+-------------------------------------------------------------------------------
+
+### **a**
 
 -------------------------------------------------------------------------------
 
@@ -278,6 +368,9 @@ Logs del contenedor:
 
 - -aq: ____. Solo los ids en "docker ps".
 
+- -f: Force. 
+  
+- -v: ____. Especificamos Bind Mount.
 
 -------------------------------------------------------------------------------
 
