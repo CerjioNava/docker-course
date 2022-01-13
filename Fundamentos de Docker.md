@@ -330,6 +330,31 @@ Sin embargo, hay problemas de seguridad al utilizar Bind Mounts ya que el conten
 
 ### **Volúmenes**
 
+Es la forma estándar de manejar datos en Docker.
+
+Mostrar lista de volumenes:
+
+      docker volume ls
+
+Crear un volumen:
+
+      docker volume create dbdata
+
+Ejecutar la BBDD y montamos el volumen.
+      
+      docker run -d --name db --mount src=dbdata,dst=/data/db mongo (corro la BBDD y monto el volume)
+
+Mostrar la información detallada del contenedor:
+
+      docker inspect db
+
+      mongo (me conecto a la BBDD)
+
+shows dbs (listo las BBDD)
+use platzi ( creo la BBDD platzi)
+db.users.insert({“nombre”:“guido”}) (inserto un nuevo dato)
+db.users.find() (veo el dato que cargué)
+
 ### **a**
 
 -------------------------------------------------------------------------------
@@ -338,7 +363,7 @@ Sin embargo, hay problemas de seguridad al utilizar Bind Mounts ya que el conten
 
 -------------------------------------------------------------------------------
 
-### **a**
+### **a** 
 
 -------------------------------------------------------------------------------
 
