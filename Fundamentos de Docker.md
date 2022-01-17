@@ -5,12 +5,17 @@
   - Virtualización vs Containerización.
   - Arquitectura de Docker.
 - CONTENEDORES:
-  - Conceptos generales
-  - nginx
+  - Conceptos generales.
+  - nginx.
 - DATOS EN DOCKER
-  - a
+  - Bind Mounts.
+  - Volúmenes.
+  - Insertar y extraer datos.
 - IMAGENES
-  - a
+  - Concepto de imágenes.
+  - Creación de imagen propia.
+  - Sistema de Capas.
+  - Docker commit.
 - DOCKER COMO HERRAMIENTA DE DESARROLLO
   - a
 - DOCKER COMPOSE
@@ -48,6 +53,8 @@
 Docker allows to: 
 
     Build, distribute and run your code anywhere without worrying.
+
+Para los problemas de ejecución de código, se utilizan los conceptos de contenedores, volúmenes. Para la distribución y construcción de software, entra el concepto de imágenes.
 
 ### **Virtualización**
 
@@ -326,7 +333,9 @@ NOTA: Mongo guarda datos por defecto en la ruta "/data/db".
 
 Los Bind Mounts permiten compartir data entre contenedores y la máquina anfitriona, atando una ruta dentro de la máquina que ejecuta el contenedor con una ruta dentro del contenedor. Lo que ocurra dentro del contenedor en dicha ruta, se verá reflejado en la máquina anfitriona.
 
-Sin embargo, hay problemas de seguridad al utilizar Bind Mounts ya que el contenedor tendrá acceso a todo lo que se encuentre en dicha ruta.
+Sin embargo, hay problemas de seguridad al utilizar Bind Mounts ya que el contenedor tendrá acceso a todo lo que se encuentre en dicha ruta. 
+
+Por ello, nacieron los volúmenes.
 
 ### **Volúmenes**
 
@@ -340,9 +349,11 @@ Crear un volumen:
 
       docker volume create dbdata
 
-Ejecutar la BBDD y montamos el volumen.
+Ejecutar la BBDD y montamos el volumen, indicando Source (src) y Destino (dst).
       
-      docker run -d --name db --mount src=dbdata,dst=/data/db mongo (corro la BBDD y monto el volume)
+      docker run -d --name db --mount src=dbdata,dst=/data/db
+      
+      mongo (corro la BBDD y monto el volume)
 
 Mostrar la información detallada del contenedor:
 
@@ -350,20 +361,189 @@ Mostrar la información detallada del contenedor:
 
       mongo (me conecto a la BBDD)
 
-shows dbs (listo las BBDD)
-use platzi ( creo la BBDD platzi)
-db.users.insert({“nombre”:“guido”}) (inserto un nuevo dato)
-db.users.find() (veo el dato que cargué)
+            shows dbs 
+            use platzi
+            db.users.insert({“nombre”:“guido”})
+            db.users.find() 
 
-### **a**
+Mismo procedimiento borrando el contenedor y rehaciendolo para comprobar que la data siga allí.
+
+      docker run -d --name db --mount src=dbdata,dst=/data/db
+      ...
+
+### **Insertar y extraer archivos de un contenedor**
+
+Creo un archivo en mi máquina:
+
+      touch prueba.txt
+
+Ejecuto un contenedor de ubuntu con tail para permanecer activo, y entro al contenedor:
+
+      docker run -d --name copytest ubuntu tail -f /dev/null
+      docker exec -it copytest bash 
+
+Creamos un directorio en el directorio del contenedor y salimos:
+
+      mkdir testing 
+      exit
+
+Copiamos el archivo dentro del contenedor:
+
+      docker cp prueba.txt copytest:/testing/test.txt
+
+      docker cp <file> <container_name>:<inside_container_root>
+
+Si entramos al contenedor y revisamos la carpeta "testing" que habíamos creado, ahora contiene el archivo que acabamos de copiar.
+
+Copiamos el directorio de un contenedor a mi máquina (es lo opuesto):
+
+      docker cp copytest:/testing localtesting
+      
+      docker cp <container_name>:<inside_container_root> <new_dir_name>
+
+NOTA: Con “docker cp” no hace falta que el contenedor esté corriendo
+
+NOTA: Puedo usar "docker cp" aún si el contenedor no está activo.
+
+Resumen:
+
+- Host: Donde Docker esta instalado (mi máquina).
+  
+- Bind Mount: Vincula directamente el sistema de archivos con el contenedor, guarda los archivos en la maquina local persistiendo y visualizando estos datos (No seguro). 
+  
+- Volume: Parecido al Bind Mount, a diferencia de que el área del sistema de archivos que el contenedor maneja, es docker quien lo administra (Seguro).
+  
+- TMPFS Mount (Temporary File System Mount): Guarda los archivos temporalmente y persiste los datos en la memoria del contenedor, cuando muera sus datos mueren con el contenedor. Esto solo en Linux.
 
 -------------------------------------------------------------------------------
 
-### **a**
+### **IMÁGENES**
+
+Las imágenes son plantillas o moldes a partir de las cuales Docker crea contenedores. Es una pieza de software liviana que contiene lo necesario para que un contenedor pueda ejecutarse en cualquier dependencia.
+
+Una imágen es un conjunto de distintas capas de datos (distribución, diferente software, librerías y personalización), es decir, una imágen se conforma de distintas capas de personalización en base a una capa inicial (base image, el más puro estado del SO).
+
+El Tag de una imagen apunta a la capa superior de una imagen.
+
+Muestro las imagenes actuales:
+
+      docker image ls
+
+Histórico de una imagen:
+
+      docker history <image>
+
+Bajar la imagen o una nueva versión desde un repositorio externp:
+
+      docker pull ubuntu:20.04
+
+Eliminar una imagen:
+
+      docker image rm -f <image_id>
+
+Por defecto, el repositorio público es Docker Hub, pero podríamos utilizar en algún momento alguno privado.
+
+### **Construyendo una imagen propia**
+
+Creamos directorio de imagenes, entramos al directorio y creamos un Dockerfile:
+
+      mkdir imagenes 
+      cd imagenes 
+      touch Dockerfile 
+      code .
+
+Contenido del Dockerfile (comando a ejecutar en tiempo de build), hay que partir de alguna imagen anterior: 
+
+      FROM ubuntu:latest
+      RUN touch /usr/src/hola-platzi.txt 
+
+Creamos una imagen con contexto Build <directorio>, tomando de este directorio el Dockerfile:
+
+      docker build -t ubuntu:platzi .
+
+Ejecutamos el contenedor con la nueva imagen:
+
+      docker run -it ubuntu:platzi 
+
+Logeamos en docker hub:
+
+      docker login
+
+Cambiamos el tag "ubuntu" que es de su repositorio público, para poder subirla al docker hub y publicamos:
+
+      docker tag ubuntu:platzi miusuario/ubuntu:platzy
+      docker push miusuario/ubuntu:platzi
+
+### **Sistema de Capas**
+
+En Docker Hub podemos ver los Dockerfile de las imagenes que descargamos, y cada comando en el Dockerfile es una capa.
+
+Si accedemos al histórico de una imagen, se pueden observar las distintas capas creadas por el Dockerfile de la imagen y el historial de capaz:
+
+      docker history <image>
+
+**IMPORTANTE:** Hay una herramienta llamada "Dive", que nos permite navegar entre el histórico entre las capas de una imagen de Docker y su configuración.
+
+      dive ubuntu:platzi
+
+      dive <image>
+      
+Usamos Tab y Ctrl+U para navegar entre los cambio del histórico.
+
+Ahora, si añadimos al Dockerfile una nueva linea de comando (una nueva capa) y rehacemos el build:
+
+      FROM ubuntu:latest
+      RUN touch /usr/src/hola-platzi.txt 
+      RUN rm /usr/src/hola-platzi.txt 
+
+      docker build -t ubuntu:platzi .
+
+Vemos como se rehacen las capas y ahora se muestra la nueva capa adicional. Los cambios de la imagen se generan en dicha nueva capa, como si fuera una especie de nuevo commit.
+
+### **Extra: Docker Commit**
+
+Docker commit tiene un funcionamiento muy parecido al commit de git, guarda el estado de la capa mutable en un tag de la imagen a partir de la cual se generó el contenedor creando una capa más para crear uno o más contenedores a partir de esta nueva imagen.
 
 -------------------------------------------------------------------------------
 
-### **a** 
+### **DOCKER COMO HERRAMIENTA DE DESARROLLO** 
+
+Descargamos el siguiente repositorio:
+
+      git clone https://github.com/platzi/docker
+
+Si vemos el Dockerfile del proyecto:
+
+      # Imagen base (node en la version 12)
+      FROM node:12
+
+      # Copiar todo lo que hay en la carpeta actual a la nueva
+      # ruta dentro del contenedor.
+      COPY [".", "/usr/src/"]
+
+      # Establecer el directorio de trabajo (cd /usr/src).
+      WORKDIR /usr/src
+
+      # Descarga las dependencias del proyecto.
+      RUN npm install
+
+      # Le dice al contenedor que escuche el puerto 3000 de la máquina.
+      EXPOSE 3000 
+
+      # Ejecuta el comando node index.js
+      CMD ["node", "index.js"]
+
+Creamos la imagen local:
+
+      docker build -t platziapp . 
+
+Creamos un contenedor a partir de esta imagen y si este contenedor se detiene, se eliminará. Esto se publicará en el puerto 3000:
+
+      docker run -d --rm -p 3000:3000 platziapp 
+
+### **Caché de capas para estructurar correctamente tus imágenes**
+
+
 
 -------------------------------------------------------------------------------
 
