@@ -543,11 +543,108 @@ Creamos un contenedor a partir de esta imagen y si este contenedor se detiene, s
 
 ### **Caché de capas para estructurar correctamente tus imágenes**
 
+Se habla del caché porque si realizamos algún cambio entre alguno de los archivos del proyecto, no queremos que cada vez que construyamos la imagen se instalen todas las dependencias de nuevo. Es decir, no instalar todo solo por modificar código.
 
+Creo la imagen local:
+
+      docker build -t platziapp . 
+
+El Dockerfile se observa:
+
+      FROM node:12
+
+      COPY [".", "/usr/src/"]
+
+      WORKDIR /usr/src
+
+      RUN npm install
+
+      EXPOSE 3000
+
+      CMD ["node", "index.js"]
+
+Cambiaremos a:
+
+      FROM node:12
+
+      COPY ["package.json", "package-lock.json", "/usr/src/"]
+
+      WORKDIR /usr/src
+
+      RUN npm install
+
+      COPY [".", "/usr/src/"]
+
+      EXPOSE 3000
+
+      CMD ["node", "index.js"]
+
+Ahora, si queremos que el contenedor se actualice cada vez que realicemos un cambio en el código, sin necesidad de hacer build siempre, compartiremos nuestro código con el contenedor. Además haremos uno de Nodemon.
+
+Cambiamos:
+
+      CMD ["node", "index.js"]
+      # Ahora será:
+      CMD ["npx", "nodemon", "index.js"]
+
+Ejecuto un contenedor y monto el archivo index.js para que se actualice dinámicamente con nodemon que está declarado en mi Dockerfile:
+
+      docker run --rm -p 3000:3000 -v /home/developer/Documentos/Github/docker/index.js:/usr/src/index.js platziapp
+
+### **Docker networking: colaboración entre contenedores**
+
+Hasta ahora, la comunicación con Mongo ha sido suponiendo que la base de datos se encuentre dentro del mismo contenedor. Ahora comunicaremos la base y proyecto dentro de una misma red.
+
+**IMPORTANTE:** La base para crear todo tipo de aplicaciones es la comunicación entre contenedores en una red propia.
+
+Mostrar lista de redes:
+
+      docker network ls 
+
+Aquí observamos tres redes por defecto:
+
+  * Bridge: Es la red default, posee retrocompatibilidad con versiones anteriores. 
+  
+  * Host: Es una representación en Docker de la red real de mi máquina. A través de esta red podría permitir que el contenedor tenga acceso a la interfaz real de la máquina.
+  
+  * None: Es una red especial de Docker que no permite que un contenedor tenga algún tipo de acceso a la red. 
+
+Creamos la red:
+
+      docker network create --atachable plazinet 
+
+NOTA: "--atachable" permite que otros contenedores puedan conectarse a dicha red.
+
+Mostrar los detalles de la red:
+
+      docker inspect plazinet 
+
+Ejecuto un contenedor y conecto al contenedor hacia la red creada:
+
+      docker run -d --name db mongo
+      docker network connect plazinet db
+
+Ahora si inspeccionamos la network, se observa en el estatus al contenedor de mongo conectado a la red.
+
+Ejecuto un nuevo contenedor y le pasamos un valor para la variable que recibe en el env (podemos ver esto dentro del index.js).
+
+      docker run -d --name app -p 3000:3000 --env MONGO_URL=mongodb://db:27017/test platziapp
+
+      # MONGO_URL=<protocolo><hostname>:<puerto>/<host_name> <image>
+
+NOTA: Contenedores pueden encontrarse en la misma red a través del "host_name" como se acaba de apuntar.
+
+Ahora si conectamos dicho contenedor a la red.
+
+      docker network connect plazinet app 
+
+Ahora si inspeccionamos nuevamente la network, ambos contenedores (mongo y proyecto) estan conectados a la misma red, y en el puerto local 3000 se obtiene la respuesta esperada por el index.js.
 
 -------------------------------------------------------------------------------
 
-### **a**
+### **DOCKER COMPOSE**
+
+AHORA SI EMPIEZA LO BUENO
 
 -------------------------------------------------------------------------------
 
