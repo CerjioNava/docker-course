@@ -611,9 +611,9 @@ Aquí observamos tres redes por defecto:
 
 Creamos la red:
 
-      docker network create --atachable plazinet 
+      docker network create --attachable plazinet 
 
-NOTA: "--atachable" permite que otros contenedores puedan conectarse a dicha red.
+NOTA: "--attachable" permite que otros contenedores puedan conectarse a dicha red.
 
 Mostrar los detalles de la red:
 
