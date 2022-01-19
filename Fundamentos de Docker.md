@@ -713,6 +713,7 @@ Eliminamos y limpiamos el estado de nuestro compose:
 
       docker-compose down
 
+### **Docker como herramienta de desarrollo**
 
 -------------------------------------------------------------------------------
 
