@@ -644,7 +644,75 @@ Ahora si inspeccionamos nuevamente la network, ambos contenedores (mongo y proye
 
 ### **DOCKER COMPOSE**
 
-AHORA SI EMPIEZA LO BUENO
+Docker compose es una herramienta que simplifica el uso docker, permitiendonos describir con una estructura declarativa la arquitectura de nuestra aplicación. Dicha herramienta utiliza un compose file (docker-compose.yml).
+
+A partir de archivos YAML es mas sencillo crear contendores, conectarlos, habilitar puertos, volumenes, etc.
+
+Con Compose puedes crear diferentes contenedores y al mismo tiempo, en cada contenedor, diferentes servicios, unirlos a un volúmen común, iniciarlos y apagarlos, etc. Es un componente fundamental para poder construir aplicaciones y microservicios.
+
+Docker Compose te permite mediante archivos YAML, poder instruir al Docker Engine a realizar tareas, programáticamente. Y esta es la clave, la facilidad para dar una serie de instrucciones, y luego repetirlas en diferentes ambientes.
+
+En el archivo "docker-compose.yml" de nuestro proyecto:
+
+      version: "3.8"
+
+      services:
+            app:
+                  image: platziapp
+                  environment:
+                        MONGO_URL: "mongodb://db:27017/test"
+                  depends_on:
+                        - db
+                  ports:
+                        - "3000:3000"
+            db:
+                  image: mongo
+
+  * services: Son los servicios que componen a nuestra aplicación, para que esta se ejecute correctamente. Un servicio de compose es parecido parecido al container, solo que a diferencia de un contenedor, un servicio puede tener uno o más contenedores de la misma imagen.
+    
+  * image: La imagen para el contenedor.
+  
+  * environment: Para definir las variables de entorno.
+    
+  * depends_on: indica de que otros servicios depende, si uno de estos no funciona o no se levantó primero, el servicio que depenga de ellos no se levantará.
+  
+  * ports: Los puertos donde se expone la aplicación. 
+
+Para crear todo lo declarado en el archivo "docker-compose.yml":
+
+      docker-compose up -d 
+
+NOTA: El prefijo de los container se asocian automáticamente al nombre de la carpeta/proyecto que los contiene, de manera que estos no tengan conflictos entre si dentro del mismo servicio.
+
+### **Algunos sub comandos**
+
+Docker Compose conecta de manera automática a todos los contenedores de un mismo servicio a una red.
+
+Lista de redes, definición de red:
+
+      docker network ls
+      docker network inspect docker_default
+
+Se observa que docker-compose se encarga de asociar el nombre del hostname al mismo nombre del contenedor respectivo, cosa muy necesaria.
+
+Muestro todos los logs del docker compose, o solo les de la app:
+
+      docker-compose logs 
+      docker-compose logs app 
+      docker-compose logs -f app 
+
+Entramos al shell del contenedor app:
+
+      docker-compose exec app bash
+
+Vemos los contenedores generados por el docker compose y eliminamos todo:
+
+      docker-compose ps
+
+Eliminamos y limpiamos el estado de nuestro compose:
+
+      docker-compose down
+
 
 -------------------------------------------------------------------------------
 
