@@ -705,7 +705,7 @@ Entramos al shell del contenedor app:
 
       docker-compose exec app bash
 
-Vemos los contenedores generados por el docker compose y eliminamos todo:
+Vemos los contenedores generados por el docker compose:
 
       docker-compose ps
 
@@ -714,6 +714,88 @@ Eliminamos y limpiamos el estado de nuestro compose:
       docker-compose down
 
 ### **Docker como herramienta de desarrollo**
+
+En el docker-compose.yml, dentro del servicio "app":
+
+    image: platziapp  --->  build: .
+
+En terminal, hacemos build del proyecto y levantamos los contenedores:
+
+    docker-compose build
+    docker-compose up -d
+
+Si quisieramos rehacer el build en la imagen luego de un cambio de código:
+
+    docker-compose build app
+
+Pero no queremos hacer esto manualmente.
+
+Añademos en el docker-compose.yml volumenes y commands:
+
+    services:
+        app:
+            build: .
+            environment:
+                MONGO_URL: "mongodb://db:27017/test"
+            depends_on:
+                - db
+            ports:
+                - "3000:3000"
+            volumes:
+                - .:/usr/src
+                - /usr/src/node_modules
+            command: npx nodemon index.js
+        db:
+            image: mongo    
+
+Ejecutamos nuevamente y levantamos el contenedor:
+
+    docker-compose up -d
+    docker-compose logs -f app 
+    # Podemos ver los cambios en index.js.
+
+### **Compose en equipo: Override**
+
+Cuando se realizan cambios frecuentemente en los archivos de docker del proyecto, para evitar conflictos dentro del trabajo en equipo, se puede trabajar con un archivo override.
+
+El Compose Override es simplemente un compose file que sirve para personalizar o hacer pequeños cambios propios para nuestro ambiente sobre el compose file original sin haberlo alterado.
+
+Creamos un archivo override:
+
+    touch docker-compose.override.yml
+
+Deshacemos los cambios hechos previamente en el docker-compose.yml y escribimos sobre el nuevo docker-compose.override.yml:
+
+    version: "3.8"
+
+    services:
+        app:
+            build: .
+            environment:
+                UNA_ VARIABLE: "HOLA PLATZI"
+
+
+Si hacemos build e image a la vez, hace el build y toma el nombre de la imagen asignada y no el por defecto. Los ports no deberían manejarse en ambos archivos, para evitar conflictos.
+
+Creamos servicios y contenedores. Entramos al bash:
+
+    docker-compose up -d
+    docker-compose exec app bash
+
+Podemos escalar dos instancias de la app, previamente definiendo el rango de puertos en el archivo compose origial:
+
+    ports:
+        -"3000-3001:3000"
+
+Entonces levantamos los dos contenedores app en dos puertos distintos de la máquina, apuntando al mismo puerto del contenedor:
+
+    docker-compose ps 
+    docker-compose up -d --scale app=2 
+
+Eliminamos lo creado en el compose:
+
+    docker-compose down
+
 
 -------------------------------------------------------------------------------
 
