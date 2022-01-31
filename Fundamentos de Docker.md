@@ -799,7 +799,159 @@ Eliminamos lo creado en el compose:
 
 -------------------------------------------------------------------------------
 
-### **a**
+### **DOCKER AVANZADO**
+
+### **Administrando el ambiente de Docker**
+
+Necesitamos administrar bien los recursos para la correcta manipulación de Docker y conocer el impacto de utilizarlo.
+      
+Observamos todos los contenedores y limpiamos los inactivos:
+
+      docker ps -a       
+      docker container prune
+      
+Eliminar todos los contenedores en general y pasamos argumento extra para mostrar dichos contenedores y sus ids:
+      
+      docker rm -f $(docker ps -aq) 
+
+Lista de redes, volumenes, imagenes:
+      
+      docker network ls      
+      docker volume ls      
+      docker image ls
+
+Borra todo lo que no se esté utilizando:
+      
+      docker system prune
+
+Ejecutamos un nuevo contenedor con limitación de memoria:
+      
+      docker run -d --name app --memory 1g platziapp
+
+Vemos cuanto recurso consume docker en mi sistema:
+      
+      docker stats 
+
+Puedo saber si un proceso muere por falta de recursos asignados en "OOMKilled=true" en:
+      
+      docker inspect app
+
+De esta manera podemos manejar o evaluar distintos escenarios de ejecución.
+
+**Extra: Remove All**
+
+      sudo docker rm -vf $(sudo docker ps -a -q)
+
+      sudo docker rmi -f $(sudo docker images -a -q)
+
+      sudo docker system prune -f
+
+      sudo docker volume prune -f
+
+### **Deteniendo contenedores correctamente: SHELL vs EXEC**
+
+Dentro del proyecto de docker, encontramos en la carpeta "avanzado/loops/" un archivo Dockerfile y un script de bash "loop.sh":
+
+      # --- Dockerfile ---
+      FROM ubuntu:trusty
+      COPY ["loop.sh", "/"]
+      CMD /loop.sh
+
+      # --- loop.sh ---
+      #!/usr/bin/env bash
+      trap 'exit 0' SIGTERM
+      while true; do :; done
+
+En Dockerfile se copia el archivo al directorio y se ejecuta. 
+
+El loop de bash hace un loop infinito a menos que reciba una señal SIGTERM, entonces sale del loop.
+
+Construimos la imagen y ejecutamos el contenedor:
+ 
+      docker build -t loop .  
+      docker run -d --name looper loop
+
+Mandamos SIGTERM al contenedor deteniéndolo, sin embargo si esto no funciona y no recibe respuesta, se le manda automáticamente SIGKILL: 
+
+      docker stop looper
+
+Mostramos el último proceso y le mandamos SIGKILL al contenedor:
+
+      docker ps -l
+      docker kill looper
+
+      docker exec looper ps -ef (veo los procesos del contenedor)
+
+De la manera anterior se nota como el loop corría como hijo del shell padre, pero queremos que se ejectue como comando principal.
+
+Cambiamos:
+
+      SHELL FORM    --->  EXEC FORM
+      CMD /loop.sh  --->  CMD ["/loop.sh"]
+
+Ejecutamos: 
+
+      docker build -t loop .  
+      docker run -d --name looper loop
+
+Ahora si hacemos stop, si se detiene inmediatamente sin esperar un SIGKILL, con el código 0 y no un 137, siendo este un Graceful Shutdown.
+
+**NOTAS:**
+
+Si el código de salida de un contenedor supera al 128, significa que se trata de una salida u excepción no manejada correctamente. 
+
+Shell: ejecuta el proceso como hijo del shell.
+
+      FROM ubuntu:trusty
+      COPY ["loop.sh", "/"]
+      CMD /loop.sh
+
+Exec: Ejecuta el comando como principal
+
+      FROM ubuntu:trusty
+      COPY ["loop.sh", "/"]
+      CMD ["/loop.sh"]
+
+## **Contenedores ejecutables: ENTRYPOINT vs CMD**
+
+Hemos usado contenedores hasta ahora para ejecutar proyectos y código, pero a veces quizá solo lo necesitamos para una tarea específica.
+
+En el proyecto docker, nos dirigimos a la carpeta "/ping" y vemos el Dockerfile:
+
+      FROM ubuntu:trusty
+      CMD ["/bin/ping", "-c", "3", "localhost"]
+
+Construimos la imagen y ejecutamos:
+
+      docker build -t ping . 
+      docker run --name pinger ping
+
+En el dockerfile:
+
+      ENTRYPOINT ["command"]
+      CMD ["params"]
+
+      ---->
+
+      ENTRYPOINT ["/bin/ping", "-c", "3"]
+      CMD ["localhost"]
+
+Pasamos como parámetros agregando anteriormente el ENTRYPOINT.
+
+      docker rm -f pinger
+      docker build -t ping . 
+
+      # Ejemplo: Pingeando a google.
+      docker run --name pinger ping google.com
+
+**NOTAS**: 
+* RUN ejecuta un comando y commitea el resultado. 
+  
+* CMD no ejecuta nada en tiempo de build pero especifica el comando llamado para la imagen.
+  
+* ENTRYPOINT es el comando que se va a ejecutar por defecto, y utiliza como comando los parámetros en CMD. Este parametro se puede modificar desde el run del contenedor.
+
+### **El contexto de build**
 
 -------------------------------------------------------------------------------
 
