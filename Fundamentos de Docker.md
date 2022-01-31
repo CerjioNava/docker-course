@@ -953,9 +953,83 @@ Pasamos como parámetros agregando anteriormente el ENTRYPOINT.
 
 ### **El contexto de build**
 
--------------------------------------------------------------------------------
+En el archivo ".dockerignore" puedo poner todo lo que no quiero que copie del contexto de build. Por ejemplo:
 
-### **a**
+      *.log
+      .dockerignore
+      .git
+      .gitignore
+      build/*
+      Dockerfile
+      node_modules
+      npm-debug.log*
+      README.md
+
+Ahorramos peso y archivos innecesarios en el build del contenedor.
+
+### **Multi-stage build**
+
+Probablemente no queremos que todo el código este en una sola imagen.
+
+Quiero el código de test en la imagen de testing, no en la productiva.
+
+Necesitamos ahorrar en el tamaño final de la imagen y tiempo de transferencia de la imagen al repositorio y viceversa.
+
+En el proyecto se observa un "development.Dockerfile" y un "production.Dockerfile":
+
+development.Dockerfile:
+
+      FROM node:12
+      COPY ["package.json", "package-lock.json", "/usr/src/"]
+      WORKDIR /usr/src
+      RUN npm install
+      COPY [".", "/usr/src/"]
+      EXPOSE 3000
+      CMD ["npx", "nodemon", "index.js"]
+
+production.Dockerfile:
+
+      # Builder image
+      FROM node:12 as builder
+      COPY ["package.json", "package-lock.json", "/usr/src/"]
+      WORKDIR /usr/src
+      RUN npm install --only=production
+      COPY [".", "/usr/src/"]
+      RUN npm install --only=development
+      RUN npm run test
+
+      # Productive image, from builder
+      FROM node:12
+      COPY ["package.json", "package-lock.json", "/usr/src/"]
+      WORKDIR /usr/src
+      RUN npm install --only=production
+      COPY --from=builder ["/usr/src/index.js", "/usr/src/"]
+      EXPOSE 3000
+      CMD ["node", "index.js"]
+
+Especificamos el dockerfile al hacer el build:
+
+      # docker build -t prodapp -f Dockerfile .
+      docker build -t prodapp -f build/production.Dockerfile .
+      docker run -d --name prod prodapp
+
+El de producción tiene dos "FROM", y representan fases distintas. De una fase posterior podemos acceder a una fase anterior.
+
+El primer build corre un test que verifica que todo funcione bien.
+
+El segundo build construye la imagen final aprovechando el caché de las capas del primer build.
+
+Lo importante en este caso especifico es que si el test falla, entonces el build 2 no se corre, lo que significa que la imagen no se construye.
+
+### **Docker-in-Docker**
+
+Crear contenedor con docker adentro:
+
+      docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock docker:19.03.12 
+
+Ejecutar dive en un contenedor que explora el estado de docker
+
+      docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):/bin/docker wagoodman/dive:latest <container>
 
 -------------------------------------------------------------------------------
 
@@ -976,12 +1050,5 @@ Pasamos como parámetros agregando anteriormente el ENTRYPOINT.
 - -f: Force. 
   
 - -v: ____. Especificamos Bind Mount.
-
--------------------------------------------------------------------------------
-
-
-
--------------------------------------------------------------------------------
-
 
 -------------------------------------------------------------------------------
